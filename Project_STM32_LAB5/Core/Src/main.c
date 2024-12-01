@@ -22,7 +22,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "global.h"
+#include "fsm_uart.h"
 #include <stdio.h>
+#include "software_timer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,6 +50,14 @@ TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+enum UART_STATE 	uartState = UART_IDLE;
+enum CMD_STATE		cmdState = CMD_IDLE;
+enum ERROR_STATE	errState = ERROR_IDLE;
+
+uint8_t flagForOK = 0;
+int waitTimerCounter = 0;
+int waitTimer_flag = 0;
+
 
 /* USER CODE END PV */
 
@@ -62,12 +73,19 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t temp = 0;
-
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
+uint8_t cmdBuffer[CMD_CONTENT_MAX_LENGTH];
+uint8_t buffer_flag = 0;
+uint8_t cmd_content_index = 0;
+uint8_t tempValue = 0;
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	if(huart->Instance == USART2){
-		HAL_UART_Transmit(&huart2, &temp, 1, 50);
-		HAL_UART_Receive_IT(&huart2, &temp, 1);
+		HAL_UART_Transmit(&huart2, &tempValue, 1, 50);
+		cmdBuffer[cmd_content_index++] = tempValue;
+		buffer_flag = 1;
+		if(cmd_content_index >= CMD_CONTENT_MAX_LENGTH){
+			cmd_content_index = 0 ;
+		}
+		HAL_UART_Receive_IT(&huart2, &tempValue, 1);
 	}
 }
 /* USER CODE END 0 */
@@ -104,19 +122,30 @@ int main(void)
   MX_TIM2_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_IT(&huart2, &temp, 1);
+  //char response[RESPONSE_LENGTH];
+  HAL_TIM_Base_Start_IT(&htim2);
+  HAL_UART_Receive_IT (&huart2, &tempValue, 1);
+  HAL_ADC_Start(&hadc1);
+
+  char welcome[50];
+  int length = sprintf(welcome, "STARTING STM32 UART LAB5\r\n");
+  HAL_UART_Transmit(&huart2, (void *)welcome, length, 50);
+  setTimers(2, 500);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint8_t ADC_value = 0;
-  char str[20];
   while (1)
   {
-	  HAL_GPIO_TogglePin(LED_YELLOW_GPIO_Port, LED_YELLOW_Pin);
-	  ADC_value = HAL_ADC_GetValue(&hadc1);
-	  HAL_UART_Transmit(&huart2, (void *)str, sprintf(str, "Phan Thanh Huy%d\n", ADC_value), 1000);
-	  HAL_Delay(500);
+	  if(timer_flags[2] == 1){
+		  setTimers(2, 500);
+		  HAL_GPIO_TogglePin(LED_YELLOW_GPIO_Port, LED_YELLOW_Pin);
+	  }
+	  if(buffer_flag == 1){
+		  command_parser_fsm();
+		  buffer_flag = 0;
+	  }
+	  uart_communication_fsm();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -314,7 +343,9 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef * htim) {
+	runTimer();
+}
 /* USER CODE END 4 */
 
 /**
