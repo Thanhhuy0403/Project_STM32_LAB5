@@ -22,12 +22,8 @@ int isOK = 0;
 void uart_communication_fsm(){
 	switch(uartState){
 	case UART_IDLE:
-//		HAL_UART_Transmit(&huart2, (void *)response, sprintf(response, "HELLO WORLD\r\n"), 1000);
-
 		break;
 	case UART_RST:
-//		HAL_UART_Transmit(&huart2, (void *)response, sprintf(response, "HELLO WORLD\r\n"), 1000);
-//		HAL_UART_Transmit(&huart2, data, sizeof(data), 1000);
 		uartState = UART_RESPONSE;
 		break;
 	case UART_RESPONSE:

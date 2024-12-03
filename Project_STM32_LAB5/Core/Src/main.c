@@ -53,12 +53,6 @@ UART_HandleTypeDef huart2;
 enum UART_STATE 	uartState = UART_IDLE;
 enum CMD_STATE		cmdState = CMD_IDLE;
 enum ERROR_STATE	errState = ERROR_IDLE;
-
-uint8_t flagForOK = 0;
-int waitTimerCounter = 0;
-int waitTimer_flag = 0;
-
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
