@@ -24,17 +24,18 @@ void uart_communication_fsm(){
 	case UART_IDLE:
 		break;
 	case UART_RST:
+		ADC_value = HAL_ADC_GetValue(&hadc1);
+		HAL_UART_Transmit(&huart2, (void *)response, sprintf(response, "!ADC=%lu#\r\n", ADC_value), 1000);
 		uartState = UART_RESPONSE;
 		break;
 	case UART_RESPONSE:
-		ADC_value = HAL_ADC_GetValue(&hadc1);
-		HAL_UART_Transmit(&huart2, (void *)response, sprintf(response, "!ADC=%lu#\r\n", ADC_value), 1000);
 		uartState = UART_WAIT_OK;
 		setTimers(1, TIME_FOR_3S);
 		break;
 	case UART_WAIT_OK:
 		if(timer_flags[1] == 1) {
-			uartState = UART_RESPONSE;
+			HAL_UART_Transmit(&huart2, (void *)response, sprintf(response, "!ADC=%lu#\r\n", ADC_value), 1000);
+			setTimers(1, TIME_FOR_3S);
 		}
 		if(isOK){
 			if(isRST){
